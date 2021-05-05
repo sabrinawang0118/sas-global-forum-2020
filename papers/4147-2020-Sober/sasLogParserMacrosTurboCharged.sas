@@ -1,4 +1,4 @@
-%put sasLogParserMacros.sas version 3.14 24Feb2021:11:48;
+%put sasLogParserMacros.sas version 3.14 03May2021:10:00;
 /* Delete the report directory */
 %macro deleteFolder(folderToDelete=&sasLogParser.reports);
 %if %sysfunc(fileexist(&sasLogParser.reports)) %then %do;
@@ -215,68 +215,7 @@ data &test;
 		 filename=File Name;
 
 run;
-title "&file";
-title2 "&test";
-proc print label; 
-   var step realtime cputime totaltime totalcpu ;
-   sum realtime cputime totaltime totalcpu;
-run;
+
 proc append base=work.logs data=&test;
 run;
-
-/* Start: create 1.descendingRealTime.pdf 4.totalSeconds.xlsx and reports.logs sas7bdat after processing each log */
-ods pdf file="&sasLogParser.reports&delm.1.descendingRealTime.pdf"; 
-
-proc sort data=work.logs;
-   by descending realtime;
-run;
-
-data reports.logs (compress=char);
-   set work.logs;
-run;
-
-proc print data=work.logs label;
-   title "Descending Clock Time";
-   var step realtime cputime totaltime totalcpu fileName;
-run;
-ods pdf close;
-
-
-data seconds;
-   length proc $40.;
-   set logs;
-   realTimeSeconds = second(realtime);
-   realTimeMinutes = minute(realtime);
-   realTimeHours = hour(realtime);
-   realTimeTotalSeconds = realTimeSeconds + (realTimeMinutes * 60) + (realTimeHours * 3600);
-   cpuTimeSeconds = second(cputime);
-   cpuTimeMinutes = minute(cputime);
-   cpuTimeHours = hour(cputime);
-   cpuTimeTotalSeconds = cpuTimeSeconds + (cpuTimeMinutes * 60) + (cpuTimeHours * 3600);
-   totalTimeSeconds = second(totalTime);
-   totalTimeMinutes = minute(totalTime);
-   totalTimeHours = hour(totalTime);
-   totalTimeTotalSeconds = totalTimeSeconds + (totalTimeMinutes * 60) + (totalTimeHours * 3600);
-   totalCPUSeconds = second(totalcpu);
-   totalCPUMinutes = minute(totalcpu);
-   totalCPUHours = hour(totalcpu);
-   totalCPUtotalSeconds = totalCPUseconds + (totalCPUminutes * 60) + (totalCPUhours * 3600);
-   proc = scan(step,3);
-   if proc = 'initialization' then proc = ' ';
-      else if proc = 'statement' then proc = 'DATA statement';
-	  else proc = 'PROC ' || proc;
-run;
-
-ods excel file="&sasLogParser.reports&delm.4.totalSeconds.xlsx" ;
-proc print data=seconds;
-   var step realtime cputime  totaltime totalcpu fileName  
-	   realTimeTotalSeconds realTimeHours realTimeMinutes realTimeSeconds
-       cpuTimeTotalSeconds cpuTimeHours cpuTimeMinutes cpuTimeSeconds
-       totalTimeTotalSeconds totalTimeHours totalTimeMinutes totalTimeSeconds
-       totalCPUtotalSeconds totalCPUhours totalCPUminutes totalCPUseconds
-	   proc
-   ;
-run;
-ods excel close;
-/* Stop: create 1.descendingRealTime.pdf 4.totalSeconds.xlsx and reports.logs sas7bdat after processing each log */
 %mend saslog;
